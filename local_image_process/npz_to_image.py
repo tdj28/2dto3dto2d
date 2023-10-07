@@ -210,10 +210,10 @@ def process_npz_to_image(
             logger.debug("Publishing npz->png image to queue")
             if write_to_file:
                 fin_path = npz_path.replace('frame_', 'final_').replace('.npz', '.png')
-                plt.savefig(fin_path, bbox_inches='tight', pad_inches=0, dpi=300)
+                plt.savefig(fin_path, format='png', bbox_inches='tight', pad_inches=0, dpi=300)
             else:
                 buf = io.BytesIO()
-                plt.savefig(buf, bbox_inches='tight', pad_inches=0, dpi=300)
+                plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0, dpi=300)
                 plt.close()
                 buf.seek(0)
             output_image_queue.put((frame_index, buf, write_to_file, fin_path))

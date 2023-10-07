@@ -30,6 +30,7 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
     try:
         while True:
             if not output_image_queue.empty():
+
                 frame_index, image_buf, write_to_file, fin_path = output_image_queue.get()
                 
                 try:
