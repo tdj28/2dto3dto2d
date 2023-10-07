@@ -1,0 +1,12 @@
+ffmpeg-python
+matplotlib
+numpy
+open3d
+plotly
+Pillow
+torch
+transformers
+tqdm
+glob2
+multiprocessing-logging
+plyfile
