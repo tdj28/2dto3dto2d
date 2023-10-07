@@ -85,8 +85,8 @@ def process_frame_to_ply(frame_queue, ply_queue, logger, ply_extraction_complete
         else:
             logger.error(f"Failed to save PLY file at {ply_path}")
         # 4. Camera Position Parameterization
-        eye_x = np.interp(frame_num, [1, num_frames], [0, 0])
-        eye_y = np.interp(frame_num, [1, num_frames], [-0.37, -0.44])
-        eye_z = np.interp(frame_num, [1, num_frames], [-0.9, 0.6])
+        eye_x = 0 # np.interp(frame_num, [1, num_frames], [0, 0])
+        eye_y = -0.4 #np.interp(frame_num, [1, num_frames], [-0.37, -0.44])
+        eye_z = -0.8 #np.interp(frame_num, [1, num_frames], [-0.9, 0.6])
         ply_queue.put((ply_path, eye_x, eye_y, eye_z))  # Queue ply file and camera position for next stage
     ply_extraction_complete.set()
