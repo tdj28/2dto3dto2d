@@ -5,32 +5,49 @@ import multiprocessing
 from helpers import setup_logger
 from image_process import extract_frames, process_frame_to_ply, process_ply_to_image
 from video_process import create_video
+import sys
+import torch
 
-
+             
+def ensure_directory_exists(directory_path):
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
 
 def main():
-    input_video_path = './media/input_video.mp4'
+    input_video_path = './input_video.mp4'
     input_frames_path = './media/input_frames'
     output_frames_path = './media/output_frames'
-    output_video_path = './media/output_video.mp4'
+    output_video_path = './output_video.mp4'
     frame_filename_glob_string = '%08d'
 
     logger = setup_logger('2dto3dto2d')
 
 
+
+    media_folder = './media'
+    input_frames_folder = os.path.join(media_folder, 'input_frames')
+    output_frames_folder = os.path.join(media_folder, 'output_frames')
+    ply_files_folder = os.path.join(media_folder, 'ply_files')
+
+    ensure_directory_exists(media_folder)
+    ensure_directory_exists(input_frames_folder)
+    ensure_directory_exists(output_frames_folder)
+    ensure_directory_exists(ply_files_folder)
+
     frame_extraction_complete = multiprocessing.Event()
     image_processing_complete = multiprocessing.Event()
+    ply_extraction_complete = multiprocessing.Event()
     frame_queue = multiprocessing.Queue()
     ply_queue = multiprocessing.Queue()
 
     # Start processes
     processes = [
         multiprocessing.Process(target=extract_frames, args=(input_video_path, input_frames_path, frame_extraction_complete)),
-        multiprocessing.Process(target=process_frame_to_ply, args=(frame_queue, ply_queue, logger)),
-        multiprocessing.Process(target=process_frame_to_ply, args=(frame_queue, ply_queue, logger)),
-        multiprocessing.Process(target=process_frame_to_ply, args=(frame_queue, ply_queue, logger)),  # Additional instance
-        multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, image_processing_complete, logger)),
-        multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, image_processing_complete, logger)),
+        multiprocessing.Process(target=process_frame_to_ply, args=(frame_queue, ply_queue, logger, ply_extraction_complete)),
+        multiprocessing.Process(target=process_frame_to_ply, args=(frame_queue, ply_queue, logger, ply_extraction_complete)),
+        multiprocessing.Process(target=process_frame_to_ply, args=(frame_queue, ply_queue, logger, ply_extraction_complete)),  # Additional instance
+        multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
+        multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
         ]
     for p in processes:
         p.start()
@@ -69,4 +86,6 @@ def main():
     create_video(output_frames_path, output_video_path)
 
 if __name__ == '__main__':
+    if not torch.cuda.is_available():
+        sys.exit("Error: CUDA is not available.")
     main()

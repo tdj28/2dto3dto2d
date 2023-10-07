@@ -3,8 +3,11 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.io as pio
 import time
+import traceback
 
-def process_ply_to_image(ply_queue, frame_extraction_complete, image_processing_complete, logger):
+MAX_RETRIES = 3
+
+def process_ply_to_image(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger):
 
     while True:
         if not ply_queue.empty():
@@ -56,20 +59,34 @@ def process_ply_to_image(ply_queue, frame_extraction_complete, image_processing_
             )
 
             # Save the output image
-            fin_path = ply_path.replace('./media/ply_files/', './media/output_frames/').replace('.ply', '.png')
+            fin_path = ply_path.replace('ply_files', 'output_frames').replace('.ply', '.png')
             print(fin_path)
             print("fin")
-            try:
-                pio.write_image(fig, fin_path)
-            except Exception as e:
-                logger.error(f"Error writing image: {e}")
-                raise
+            for i in range(MAX_RETRIES):
+                try:
+                    pio.write_image(fig, fin_path)
+                except FileNotFoundError as e:
+                    logger.error(f"File not found: {fin_path}. Error: {e}")
+                    logger.debug(traceback.format_exc())  # Log the full traceback
+                    break  # No point in retrying if file not found
+                except IOError as e:
+                    logger.error(f"IO error writing image to: {fin_path}. Error: {e}. Attempt: {i+1}")
+                    logger.debug(traceback.format_exc())  # Log the full traceback
+                    if i < MAX_RETRIES - 1:  # Don't sleep after the last attempt
+                        time.sleep(1)  # Wait for a while before retrying
+                    continue  # Retry
+                except Exception as e:
+                    logger.error(f"Unexpected error writing image to: {fin_path}. Error: {e}")
+                    logger.debug(traceback.format_exc())  # Log the full traceback
+                    break  # No point in retrying if we don't know what the error is
+                else:
+                    print("wrote")
+                    break  # Exit the loop if write was successful
 
-            print("wrote")
 
 
-        elif frame_extraction_complete.is_set():
-            print("I'm broke")
+        elif frame_extraction_complete.is_set() and ply_extraction_complete.is_set():
+            print("I'm broke in ply_to_image.py")
             break  # Exit when frame extraction is complete and ply queue is empty
         else:
             time.sleep(1)  # Wait for more ply files to be queued

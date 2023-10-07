@@ -16,8 +16,13 @@ def initialize_model(logger):
         logger.error(f"Error: {e}")
         return None, None
     
-def process_frame_to_ply(frame_queue, ply_queue, logger):
+def process_frame_to_ply(frame_queue, ply_queue, logger, ply_extraction_complete):
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     feature_extractor, model = initialize_model(logger)
+    model = model.to(device)
+
 
     while True:
         #print("True")
@@ -45,7 +50,7 @@ def process_frame_to_ply(frame_queue, ply_queue, logger):
         #print("bb")
         #print(type(image), image.size)
         inputs = feature_extractor(images=image, return_tensors="pt")
-
+        inputs = inputs.to(device)
         #print("c")
 
         with torch.no_grad():
@@ -82,3 +87,4 @@ def process_frame_to_ply(frame_queue, ply_queue, logger):
         eye_y = np.interp(frame_num, [1, num_frames], [-0.37, -0.44])
         eye_z = np.interp(frame_num, [1, num_frames], [-0.9, 0.6])
         ply_queue.put((ply_path, eye_x, eye_y, eye_z))  # Queue ply file and camera position for next stage
+    ply_extraction_complete.set()
