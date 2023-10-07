@@ -151,11 +151,18 @@ def process_npz_to_image(
             # Convert to integer to get rid of leading zeros.
             #number = int(number_string)
             # Load point cloud
-            if write_to_file:
-                pointcloud = np.load(npz_path)
-            else:
-                pointcloud = Pointclouds(points=[points], features=[colors])
-
+            try:
+                if write_to_file:
+                    pointcloud = np.load(npz_path)
+                else:
+                    pointcloud = Pointclouds(points=[points], features=[colors])
+            except FileNotFoundError:
+                logger.error(f"File not found: {npz_path}")
+                pointcloud = None
+            except Exception as e:
+                logger.error(f"Unexpected error: {e}")
+                pointcloud = None
+            
             logger.debug(f"Pointcloud loaded for {frame_index}")
 
             verts = torch.Tensor(pointcloud['points']).to(device)
