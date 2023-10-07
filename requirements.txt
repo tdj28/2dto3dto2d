@@ -10,3 +10,5 @@ tqdm
 glob2
 multiprocessing-logging
 plyfile
+kaleido
+git+https://github.com/facebookresearch/pytorch3d.git@stable
