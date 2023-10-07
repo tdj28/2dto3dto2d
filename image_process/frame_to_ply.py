@@ -90,3 +90,71 @@ def process_frame_to_ply(frame_queue, ply_queue, logger, ply_extraction_complete
         eye_z = -0.8 #np.interp(frame_num, [1, num_frames], [-0.9, 0.6])
         ply_queue.put((ply_path, eye_x, eye_y, eye_z))  # Queue ply file and camera position for next stage
     ply_extraction_complete.set()
+
+
+def process_frame_to_npz(frame_queue, npz_queue, logger, npz_extraction_complete):  # Renamed function to reflect changes
+    logger = setup_logger('2dto3dto2d')
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    feature_extractor, model = initialize_model(logger)
+    model = model.to(device)
+
+    while True:
+        frame_data = frame_queue.get()
+        if frame_data is None:
+            logger.info("Exit received in process_frame_to_npz.")  # Changed log message
+            break  
+        frame_path, frame_num, num_frames = frame_data
+        logger.info(f"Processing frame {frame_num}")
+
+        image = Image.open(frame_path)
+
+        new_height = 480 if image.height > 480 else image.height
+        new_height -= (new_height % 32)
+        new_width = int(new_height * image.width / image.height)
+        diff = new_width % 32
+        #print("b")
+
+        new_width = new_width - diff if diff < 16 else new_width + 32 - diff
+        new_size = (new_width, new_height)
+        image = image.resize(new_size)
+        #print("bb")
+        #print(type(image), image.size)
+        inputs = feature_extractor(images=image, return_tensors="pt")
+        inputs = inputs.to(device)
+        #print("c")
+
+        with torch.no_grad():
+            outputs = model(**inputs)
+            predicted_depth = outputs.predicted_depth
+
+        pad = 16
+        output = predicted_depth.squeeze().cpu().numpy() * 1000.0
+        output = output[pad:-pad, pad:-pad]
+        image = image.crop((pad, pad, image.width - pad, image.height - pad))
+
+        width, height = image.size
+        #print(f"{width} {height}")
+        depth_image = (output * 255 / np.max(output)).astype('uint8')
+        image = np.array(image)
+        depth_o3d = o3d.geometry.Image(depth_image)
+        image_o3d = o3d.geometry.Image(image)
+        rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(image_o3d, depth_o3d, convert_rgb_to_intensity=False)
+        camera_intrinsic = o3d.camera.PinholeCameraIntrinsic()
+        camera_intrinsic.set_intrinsics(width, height, 500, 500, width/2, height/2)
+        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_image, camera_intrinsic)
+
+        # Extract point coordinates and colors from Open3D point cloud
+        points = np.asarray(pcd.points)
+        colors = np.asarray(pcd.colors)
+        
+        # Save to npz
+        npz_path = frame_path.replace('./media/input_frames', './media/npz_files').replace('.png', '.npz')  # Make sure this directory exists or adjust accordingly
+        np.savez(npz_path, points=points, colors=colors)
+        logger.info(f"Successfully saved NPZ file at {npz_path}")
+
+        # Camera Position Parameterization (remains unchanged)
+        eye_x, eye_y, eye_z = 0, -0.4, -0.8
+        npz_queue.put((npz_path, eye_x, eye_y, eye_z))  # Queue npz file and camera position for next stage
+    
+    npz_extraction_complete.set()  # Maybe consider renaming this flag to something more generic like 'extraction_complete'
