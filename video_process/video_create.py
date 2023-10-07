@@ -55,12 +55,20 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
         height, width, _ = images[0][1].shape
 
         # Initialize video writer
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # or use 'XVID'
-        video = cv2.VideoWriter(output_video_path, fourcc, 30.0, (width, height))
-
+        try:
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # or use 'XVID'
+            video = cv2.VideoWriter(output_video_path, fourcc, 30.0, (width, height))
+        except Exception as e:
+            logger.error(f"Error initializing video writer: {e}")
+            raise
         # Write images to video
-        for _, image in images:
-            video.write(image)
+        for i, image in enumerate(images):
+            try:
+                video.write(image)
+                logger.info(f"Successfully wrote frame {i} to video.")
+            except Exception as e:
+                logger.error(f"Error writing frame {i} to video: {e}")
+                continue
 
         video.release()
         logger.info(f"Video written to {output_video_path}")
