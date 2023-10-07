@@ -62,12 +62,12 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
             logger.error(f"Error initializing video writer: {e}")
             raise
         # Write images to video
-        for i, image in enumerate(images):
+        for i, (frame_index, image_data) in enumerate(images):
             try:
-                video.write(image)
-                logger.info(f"Successfully wrote frame {i} to video.")
+                video.write(image_data)
+                logger.info(f"Successfully wrote frame {frame_index} to video.")
             except Exception as e:
-                logger.error(f"Error writing frame {i} to video: {e}")
+                logger.error(f"Error writing frame {frame_index} to video: {e}")
                 continue
 
         video.release()
