@@ -155,7 +155,8 @@ def process_npz_to_image(
                 if write_to_file:
                     pointcloud = np.load(npz_path)
                 else:
-                    pointcloud = Pointclouds(points=[points], features=[colors])
+                    #pointcloud = Pointclouds(points=[points], features=[colors])
+                    pointclodu = {'points': points, 'colors': colors}
             except FileNotFoundError:
                 logger.error(f"File not found: {npz_path}")
                 pointcloud = None
