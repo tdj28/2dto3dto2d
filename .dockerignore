@@ -1,0 +1,17 @@
+./media
+# Ignore Python cache files
+**/__pycache__
+
+# Ignore .git directory
+.git
+
+# Ignore log files
+*.log
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore files related to testing
+tests/
+*.test.py

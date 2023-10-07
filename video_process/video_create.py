@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import time
 from PIL import Image
+from helpers import setup_logger
 
 def create_video(images_path, video_path):
     command = [
@@ -23,12 +24,19 @@ def create_video(images_path, video_path):
         raise Exception(error_message)  # Raise an exception with the error output
 
 def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_extraction_complete, final_video_creation_complete, output_video_path):
+    logger = setup_logger('2dto3dto2d:collect_and_write_images')
     images = []
     while True:
         if not output_image_queue.empty():
-            frame_index, image_buf = output_image_queue.get()
-            image = np.array(Image.open(image_buf))
+            frame_index, image_buf, write_to_file, fin_path = output_image_queue.get()
+            
+            if write_to_file:
+                image = np.array(Image.open(fin_path))
+            else:
+                image = np.array(Image.open(image_buf))
+
             images.append((frame_index, image))
+            logger.info(f"Collected image {frame_index}")
         elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set():
             break
         else:
@@ -49,4 +57,5 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
         video.write(image)
 
     video.release()
+    logger.info(f"Video written to {output_video_path}")
     final_video_creation_complete.set()

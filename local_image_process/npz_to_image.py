@@ -124,9 +124,14 @@ def process_ply_to_image(ply_queue, frame_extraction_complete, ply_extraction_co
             print("sleep")
     image_processing_complete.set()  # Indicate that image processing is complete
 
-def process_npz_to_image(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete):
+def process_npz_to_image(
+        npz_queue,
+        output_image_queue,
+        frame_extraction_complete,
+        npz_extraction_complete,
+        image_processing_complete):
     
-    logger = setup_logger('2dto3dto2d')
+    logger = setup_logger('2dto3dto2d:process_npz_to_image')
 
     if torch.cuda.is_available():
         device = torch.device("cuda:0")
@@ -136,15 +141,18 @@ def process_npz_to_image(npz_queue, output_image_queue, frame_extraction_complet
 
     while True:
         if not npz_queue.empty():
-            npz_data = npz_queue.get()
-            points, colors, frame_index, total_frames = npz_data
-            pointcloud = Pointclouds(points=[points], features=[colors])
+
+            points, colors, frame_index, total_frames, write_to_file, npz_path = npz_queue.get()
             # Split by "/" and take the last part. Then strip off ".npz" from the end.
             #number_string = npz_path.split("/")[-1].replace(".npz", "")
             # Convert to integer to get rid of leading zeros.
             #number = int(number_string)
             # Load point cloud
-            #pointcloud = np.load(npz_path)
+            if write_to_file:
+               pointcloud = np.load(npz_path)
+            else:
+                pointcloud = Pointclouds(points=[points], features=[colors])
+
             verts = torch.Tensor(pointcloud['points']).to(device)
             rgb = torch.Tensor(pointcloud['colors']).to(device)
 
@@ -184,13 +192,17 @@ def process_npz_to_image(npz_queue, output_image_queue, frame_extraction_complet
             plt.figure(figsize=(10, 10))
             plt.imshow(images[0, ..., :3].cpu().numpy())
             plt.axis("off")
-            #fin_path = npz_path.replace('npz_files', 'output_frames').replace('.npz', '.png')
-            #frame_index = 0
-            buf = io.BytesIO()
-            plt.savefig(buf, bbox_inches='tight', pad_inches=0, dpi=300)
-            plt.close()
-            buf.seek(0)
-            output_image_queue.put((frame_index, buf))
+            fin_path = None
+            bug = None
+            if write_to_file:
+                fin_path = npz_path.replace('frame_', 'final_').replace('.npz', '.png')
+                plt.savefig(fin_path, bbox_inches='tight', pad_inches=0, dpi=300)
+            else:
+                buf = io.BytesIO()
+                plt.savefig(buf, bbox_inches='tight', pad_inches=0, dpi=300)
+                plt.close()
+                buf.seek(0)
+            output_image_queue.put((frame_index, buf, write_to_file, fin_path))
         elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set():
             print("I'm done with everything")
             break  # Exit when frame extraction is complete and ply queue is empty

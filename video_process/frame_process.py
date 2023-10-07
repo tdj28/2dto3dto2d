@@ -2,6 +2,7 @@ import subprocess
 from helpers import setup_logger
 import cv2
 import numpy as np
+import os
 
 def extract_frames_ffmpeg(video_path, frames_path, frame_extraction_complete):
     logger = setup_logger('2dto3dto2d')
@@ -20,8 +21,8 @@ def extract_frames_ffmpeg(video_path, frames_path, frame_extraction_complete):
         raise Exception(error_message)  # Raise an exception with the error output
     frame_extraction_complete.set()
 
-def extract_frames(video_path, input_img_queue, frame_extraction_complete):
-    logger = setup_logger('2dto3dto2d')
+def extract_frames(video_path, input_img_queue, frame_extraction_complete, write_to_file=False, output_dir=None):
+    logger = setup_logger('2dto3dto2d:extract_frames')
     try:
         cap = cv2.VideoCapture(video_path)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -30,8 +31,20 @@ def extract_frames(video_path, input_img_queue, frame_extraction_complete):
             ret, frame = cap.read()
             if not ret:
                 break
-            input_img_queue.put((frame_index, total_frames, frame))
+            outfile_path = None
+            if write_to_file:
+                if output_dir is None:
+                    raise ValueError("output_dir must be specified when write_to_file is True")
+                filename = os.path.join(output_dir, f"frame_{frame_index:08d}.png")
+                outfile_path = filename
+                cv2.imwrite(filename, frame)
+                frame = None
+                logger.info(f"Wrote frame {frame_index} to file {filename}")
+
+            input_img_queue.put((frame_index, total_frames, frame, write_to_file, outfile_path))
+            logger.info(f"Queued frame {frame_index}")
             frame_index += 1
         cap.release()
     except Exception as e:
         logger.error(f"Error in extract_frames: {e}")
+    frame_extraction_complete.set()

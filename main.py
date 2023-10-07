@@ -24,19 +24,16 @@ def main():
 
     logger = setup_logger('2dto3dto2d')
 
+    write_to_file = False
+    output_dir = None
 
+    # write_to_file = True
+    # output_dir = './media/'
+    # ensure_directory_exists(output_dir)
 
-    # media_folder = './media'
-    # input_frames_folder = os.path.join(media_folder, 'input_frames')
-    # output_frames_folder = os.path.join(media_folder, 'output_frames')
-    # npz_files_folder = os.path.join(media_folder, 'npz_files')
-
-    # ensure_directory_exists(media_folder)
-    # ensure_directory_exists(input_frames_folder)
-    # ensure_directory_exists(output_frames_folder)
-    # ensure_directory_exists(npz_files_folder)
-    input_video_path = './input_video.mp4'
-    output_video_path = './output_video.mp4'
+    ensure_directory_exists('./media')
+    input_video_path = './media/input_video.mp4'
+    output_video_path = './media/output_video.mp4'
 
     frame_extraction_complete = multiprocessing.Event()
     image_processing_complete = multiprocessing.Event()
@@ -44,16 +41,15 @@ def main():
     final_video_creation_complete = multiprocessing.Event()
 
     input_img_queue = multiprocessing.Queue()
-    frame_queue = multiprocessing.Queue()
     npz_queue = multiprocessing.Queue()
     output_image_queue = multiprocessing.Queue()
 
     # Start processes
     processes = [
-        multiprocessing.Process(target=extract_frames, args=(input_video_path, input_img_queue, frame_extraction_complete)),
-        multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, logger, npz_extraction_complete)),
-        multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, logger, npz_extraction_complete)),
-        multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, logger, npz_extraction_complete)),
+        multiprocessing.Process(target=extract_frames, args=(input_video_path, input_img_queue, frame_extraction_complete, write_to_file, output_dir)),
+        multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, frame_extraction_complete, npz_extraction_complete)),
+        multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, frame_extraction_complete, npz_extraction_complete)),
+        multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, frame_extraction_complete, npz_extraction_complete)),
         multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
         multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
         multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
@@ -64,8 +60,8 @@ def main():
         p.start()
 
     # Monitor frame directory and queue new frames
-    known_frames = set()
-    frame_num = 0  # Initialize frame number
+    # known_frames = set()
+    # frame_num = 0  # Initialize frame number
 
     # while not frame_extraction_complete.is_set():
     #     current_frames = set(glob.glob(f"{input_frames_path}/*.png"))
@@ -84,7 +80,7 @@ def main():
     #     time.sleep(1)  # Wait before checking for new frames again
 
 
-
+    final_video_creation_complete.wait()
     # # Signal ply processing to exit
     # frame_queue.put(None)
 
@@ -92,7 +88,7 @@ def main():
     for p in processes:
         p.join()
 
-    final_video_creation_complete.wait()
+    
     # Create video from output images
     #create_video(output_frames_path, output_video_path)
 
