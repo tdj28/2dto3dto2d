@@ -137,7 +137,7 @@ def process_npz_to_image(npz_queue, output_image_queue, frame_extraction_complet
     while True:
         if not npz_queue.empty():
             npz_data = npz_queue.get()
-            points, colors, frame_index = npz_data
+            points, colors, frame_index, total_frames = npz_data
             pointcloud = Pointclouds(points=[points], features=[colors])
             # Split by "/" and take the last part. Then strip off ".npz" from the end.
             #number_string = npz_path.split("/")[-1].replace(".npz", "")
@@ -158,7 +158,8 @@ def process_npz_to_image(npz_queue, output_image_queue, frame_extraction_complet
             normalized_verts = (verts - centroid) / scale
 
             # Initialize a camera close to the centroid
-            R, T = look_at_view_transform(dist=-1, elev=0, azim=number)
+            azim = (frame_index / total_frames) * 360
+            R, T = look_at_view_transform(dist=-1, elev=0, azim=azim)
             R[0, 1] = -R[0, 1]  # Flip the y-axis
 
             cameras = FoVPerspectiveCameras(device=device, R=R, T=T)

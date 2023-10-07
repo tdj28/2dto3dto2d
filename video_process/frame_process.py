@@ -24,12 +24,13 @@ def extract_frames(video_path, input_img_queue, frame_extraction_complete):
     logger = setup_logger('2dto3dto2d')
     try:
         cap = cv2.VideoCapture(video_path)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         frame_index = 0
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
-            input_img_queue.put((frame_index, frame))
+            input_img_queue.put((frame_index, total_frames, frame))
             frame_index += 1
         cap.release()
     except Exception as e:

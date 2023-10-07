@@ -100,7 +100,7 @@ def process_frame_to_npz(input_img_queue, npz_queue, logger, npz_extraction_comp
     model = model.to(device)
 
     while True:
-        frame_index, frame_data = input_img_queue.get()
+        frame_index, total_frames, frame_data = input_img_queue.get()
         if frame_data is None:
             logger.info("Exit received in process_frame_to_npz.")  # Changed log message
             break  
@@ -155,6 +155,6 @@ def process_frame_to_npz(input_img_queue, npz_queue, logger, npz_extraction_comp
 
         # Camera Position Parameterization (remains unchanged)
         #eye_x, eye_y, eye_z = 0, -0.4, -0.8
-        npz_queue.put((points, colors, frame_index)) # (npz_path, eye_x, eye_y, eye_z))  # Queue npz file and camera position for next stage
+        npz_queue.put((points, colors, frame_index, total_frames)) # (npz_path, eye_x, eye_y, eye_z))  # Queue npz file and camera position for next stage
     
     npz_extraction_complete.set()  # Maybe consider renaming this flag to something more generic like 'extraction_complete'
