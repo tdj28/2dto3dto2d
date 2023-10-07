@@ -3,7 +3,7 @@ import os
 import time
 import multiprocessing
 from helpers import setup_logger
-from image_process import extract_frames, process_frame_to_ply, process_ply_to_image, process_frame_to_npz
+from image_process import extract_frames, process_frame_to_npz, process_npz_to_image
 from video_process import create_video
 import sys
 import torch
@@ -51,9 +51,9 @@ def main():
         multiprocessing.Process(target=process_frame_to_npz, args=(frame_queue, npz_queue, logger, npz_extraction_complete)),
         multiprocessing.Process(target=process_frame_to_npz, args=(frame_queue, npz_queue, logger, npz_extraction_complete)),
         multiprocessing.Process(target=process_frame_to_npz, args=(frame_queue, npz_queue, logger, npz_extraction_complete)),
-        # multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
-        # multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
-        # multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
+        multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
+        multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
+        multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
         # multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
     ]
     for p in processes:

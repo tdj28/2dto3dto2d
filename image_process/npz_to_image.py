@@ -6,6 +6,34 @@ import time
 import traceback
 from helpers import setup_logger
 
+import os
+import torch
+import torch.nn.functional as F
+import matplotlib.pyplot as plt
+
+# Util function for loading point clouds|
+import numpy as np
+
+# Data structures and functions for rendering
+from pytorch3d.structures import Pointclouds
+from pytorch3d.vis.plotly_vis import AxisArgs, plot_batch_individually, plot_scene
+from pytorch3d.renderer import (
+    look_at_view_transform,
+    FoVOrthographicCameras, 
+    PointsRasterizationSettings,
+    PointsRenderer,
+    PulsarPointsRenderer,
+    PointsRasterizer,
+    AlphaCompositor,
+    NormWeightedCompositor,
+    FoVPerspectiveCameras
+)
+import torch
+from pytorch3d.structures import Pointclouds
+from pytorch3d.renderer import look_at_view_transform, FoVPerspectiveCameras, PointsRasterizationSettings, PointsRasterizer, PointsRenderer, AlphaCompositor
+import matplotlib.pyplot as plt
+
+
 MAX_RETRIES = 3
 
 def process_ply_to_image(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger2):
@@ -92,5 +120,71 @@ def process_ply_to_image(ply_queue, frame_extraction_complete, ply_extraction_co
         else:
             time.sleep(1)  # Wait for more ply files to be queued
             print("sleep")
+    image_processing_complete.set()  # Indicate that image processing is complete
+
+def process_npz_to_image(npz_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete):
+    
+    logger = setup_logger('2dto3dto2d')
+
+    if torch.cuda.is_available():
+        device = torch.device("cuda:0")
+        torch.cuda.set_device(device)
+    else:
+        device = torch.device("cpu")
+
+    while True:
+        if not npz_queue.empty():
+            npz_data = npz_queue.get()
+            npz_path, eye_x, eye_y, eye_z = npz_data
+
+            # Load point cloud
+            pointcloud = np.load(npz_path)
+            verts = torch.Tensor(pointcloud['points']).to(device)
+            rgb = torch.Tensor(pointcloud['colors']).to(device)
+
+            # Compute centroid and bounding box
+            centroid = verts.mean(dim=0)
+            min_vals, _ = verts.min(dim=0)
+            max_vals, _ = verts.max(dim=0)
+
+            # Normalize the point cloud
+            scale = (max_vals - min_vals).max().item()
+            normalized_verts = (verts - centroid) / scale
+
+            # Initialize a camera close to the centroid
+            R, T = look_at_view_transform(dist=-1, elev=0, azim=180)
+            R[0, 1] = -R[0, 1]  # Flip the y-axis
+
+            cameras = FoVPerspectiveCameras(device=device, R=R, T=T)
+
+            # Define rasterization settings
+            raster_settings = PointsRasterizationSettings(
+                image_size=512, 
+                radius = 0.005,  # Adjusted for normalized point cloud
+                points_per_pixel = 10
+            )
+
+            # Create a points renderer
+            rasterizer = PointsRasterizer(cameras=cameras, raster_settings=raster_settings)
+            renderer = PointsRenderer(
+                rasterizer=rasterizer,
+                compositor=AlphaCompositor()
+            )
+
+            # Render normalized point cloud
+            point_cloud = Pointclouds(points=[normalized_verts], features=[rgb])
+            images = renderer(point_cloud)
+            plt.figure(figsize=(10, 10))
+            plt.imshow(images[0, ..., :3].cpu().numpy())
+            plt.axis("off")
+            fin_path = npz_path.replace('npz_files', 'output_frames').replace('.npz', '.png')
+
+            plt.savefig(fin_path, bbox_inches='tight', pad_inches=0, dpi=300)
+            plt.close()
+        elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set():
+            print("I'm done with everything")
+            break  # Exit when frame extraction is complete and ply queue is empty
+        else:
+            time.sleep(1)  # Wait for more ply files to be queued
     image_processing_complete.set()  # Indicate that image processing is complete
 
