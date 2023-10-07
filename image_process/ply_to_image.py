@@ -4,11 +4,12 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import time
 import traceback
+from helpers import setup_logger
 
 MAX_RETRIES = 3
 
-def process_ply_to_image(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger):
-
+def process_ply_to_image(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger2):
+    logger = setup_logger('2dto3dto2d')
     while True:
         if not ply_queue.empty():
             print(ply_queue.qsize())

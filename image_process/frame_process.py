@@ -1,6 +1,8 @@
 import subprocess
+from helpers import setup_logger
 
 def extract_frames(video_path, frames_path, frame_extraction_complete):
+    logger = setup_logger('2dto3dto2d')
     frame_filename_glob_string = '%08d'
     command = [
         'ffmpeg',

@@ -14,6 +14,8 @@ def ensure_directory_exists(directory_path):
         os.makedirs(directory_path)
 
 def main():
+    multiprocessing.set_start_method('spawn', force=True)
+
     input_video_path = './input_video.mp4'
     input_frames_path = './media/input_frames'
     output_frames_path = './media/output_frames'
@@ -44,8 +46,8 @@ def main():
     processes = [
         multiprocessing.Process(target=extract_frames, args=(input_video_path, input_frames_path, frame_extraction_complete)),
         multiprocessing.Process(target=process_frame_to_ply, args=(frame_queue, ply_queue, logger, ply_extraction_complete)),
-        multiprocessing.Process(target=process_frame_to_ply, args=(frame_queue, ply_queue, logger, ply_extraction_complete)),
-        multiprocessing.Process(target=process_frame_to_ply, args=(frame_queue, ply_queue, logger, ply_extraction_complete)),  # Additional instance
+        multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
+        multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
         multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
         multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
         ]

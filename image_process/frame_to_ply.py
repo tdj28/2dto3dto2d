@@ -3,6 +3,7 @@ import open3d as o3d
 import torch
 import numpy as np
 from PIL import Image
+from helpers import setup_logger
 
 def initialize_model(logger):
     try:
@@ -17,7 +18,8 @@ def initialize_model(logger):
         return None, None
     
 def process_frame_to_ply(frame_queue, ply_queue, logger, ply_extraction_complete):
-    
+    logger = setup_logger('2dto3dto2d')
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     feature_extractor, model = initialize_model(logger)
