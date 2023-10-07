@@ -207,6 +207,6 @@ def process_npz_to_image(
             print("I'm done with everything")
             break  # Exit when frame extraction is complete and ply queue is empty
         else:
-            time.sleep(1)  # Wait for more ply files to be queued
+            time.sleep(1)  # Wait for more npz files to be queued
     image_processing_complete.set()  # Indicate that image processing is complete
 

@@ -53,7 +53,7 @@ def main():
         multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
         multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
         multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
-        multiprocessing.Process(target=collect_and_write_images, args=(output_image_queue, frame_extraction_complete, npz_extraction_complete, final_video_creation_complete, output_video_path)),
+        multiprocessing.Process(target=collect_and_write_images, args=(output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete, final_video_creation_complete, output_video_path)),
         # multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
     ]
     for p in processes:

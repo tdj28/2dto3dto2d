@@ -104,9 +104,11 @@ def process_frame_to_npz(
     model = model.to(device)
 
     while True:
-        frame_index, total_frames, frame_data, write_to_file, outfile_path = input_img_queue.get()
         if frame_extraction_complete.is_set() and input_img_queue.empty():
             break
+        
+        frame_index, total_frames, frame_data, write_to_file, outfile_path = input_img_queue.get()
+       
         if frame_data is None:
             logger.info("Exit received in process_frame_to_npz.")  # Changed log message
             break  

@@ -23,7 +23,7 @@ def create_video(images_path, video_path):
         print(error_message)
         raise Exception(error_message)  # Raise an exception with the error output
 
-def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_extraction_complete, final_video_creation_complete, output_video_path):
+def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete, final_video_creation_complete, output_video_path):
     logger = setup_logger('2dto3dto2d:collect_and_write_images')
     images = []
     while True:
@@ -37,7 +37,7 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
 
             images.append((frame_index, image))
             logger.info(f"Collected image {frame_index}")
-        elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set():
+        elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set() and image_processing_complete.set():
             break
         else:
             time.sleep(1)  # Wait for more images to be queued
