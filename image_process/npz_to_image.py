@@ -136,7 +136,10 @@ def process_npz_to_image(npz_queue, frame_extraction_complete, npz_extraction_co
         if not npz_queue.empty():
             npz_data = npz_queue.get()
             npz_path, eye_x, eye_y, eye_z = npz_data
-
+            # Split by "/" and take the last part. Then strip off ".npz" from the end.
+            number_string = npz_path.split("/")[-1].replace(".npz", "")
+            # Convert to integer to get rid of leading zeros.
+            number = int(number_string)
             # Load point cloud
             pointcloud = np.load(npz_path)
             verts = torch.Tensor(pointcloud['points']).to(device)
@@ -152,7 +155,7 @@ def process_npz_to_image(npz_queue, frame_extraction_complete, npz_extraction_co
             normalized_verts = (verts - centroid) / scale
 
             # Initialize a camera close to the centroid
-            R, T = look_at_view_transform(dist=-1, elev=0, azim=180)
+            R, T = look_at_view_transform(dist=-1, elev=0, azim=number)
             R[0, 1] = -R[0, 1]  # Flip the y-axis
 
             cameras = FoVPerspectiveCameras(device=device, R=R, T=T)

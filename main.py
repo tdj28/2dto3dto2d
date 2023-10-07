@@ -29,20 +29,18 @@ def main():
     media_folder = './media'
     input_frames_folder = os.path.join(media_folder, 'input_frames')
     output_frames_folder = os.path.join(media_folder, 'output_frames')
-    ply_files_folder = os.path.join(media_folder, 'npz_files')
+    npz_files_folder = os.path.join(media_folder, 'npz_files')
 
     ensure_directory_exists(media_folder)
     ensure_directory_exists(input_frames_folder)
     ensure_directory_exists(output_frames_folder)
-    ensure_directory_exists(ply_files_folder)
+    ensure_directory_exists(npz_files_folder)
 
     frame_extraction_complete = multiprocessing.Event()
     image_processing_complete = multiprocessing.Event()
-    ply_extraction_complete = multiprocessing.Event()
     npz_extraction_complete = multiprocessing.Event()
 
     frame_queue = multiprocessing.Queue()
-    ply_queue = multiprocessing.Queue()
     npz_queue = multiprocessing.Queue()
 
     # Start processes
