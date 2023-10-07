@@ -156,6 +156,8 @@ def process_npz_to_image(
             else:
                 pointcloud = Pointclouds(points=[points], features=[colors])
 
+            logger.debug(f"Pointcloud loaded for {frame_index}")
+
             verts = torch.Tensor(pointcloud['points']).to(device)
             rgb = torch.Tensor(pointcloud['colors']).to(device)
 
@@ -197,6 +199,7 @@ def process_npz_to_image(
             plt.axis("off")
             fin_path = None
             bug = None
+            logger.debug("Publishing npz->png image to queue")
             if write_to_file:
                 fin_path = npz_path.replace('frame_', 'final_').replace('.npz', '.png')
                 plt.savefig(fin_path, bbox_inches='tight', pad_inches=0, dpi=300)
@@ -206,6 +209,7 @@ def process_npz_to_image(
                 plt.close()
                 buf.seek(0)
             output_image_queue.put((frame_index, buf, write_to_file, fin_path))
+            logger.debug(f"Published npz->png image to queue for frame {frame_index}")
         elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set():
             print("I'm done with everything")
             break  # Exit when frame extraction is complete and ply queue is empty
