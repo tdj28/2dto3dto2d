@@ -43,7 +43,7 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
 
                 images.append((frame_index, image))
                 logger.info(f"Collected image {frame_index}")
-            elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set() and image_processing_complete.set():
+            elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set() and image_processing_complete.is_set():
                 break
             else:
                 time.sleep(1)  # Wait for more images to be queued
