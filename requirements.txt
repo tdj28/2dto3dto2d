@@ -11,4 +11,5 @@ glob2
 multiprocessing-logging
 plyfile
 kaleido
+opencv-python
 git+https://github.com/facebookresearch/pytorch3d.git@stable

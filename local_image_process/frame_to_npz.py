@@ -92,7 +92,7 @@ def process_frame_to_ply(frame_queue, ply_queue, logger, ply_extraction_complete
     ply_extraction_complete.set()
 
 
-def process_frame_to_npz(frame_queue, npz_queue, logger, npz_extraction_complete):  # Renamed function to reflect changes
+def process_frame_to_npz(input_img_queue, npz_queue, logger, npz_extraction_complete):  # Renamed function to reflect changes
     logger = setup_logger('2dto3dto2d')
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -100,14 +100,14 @@ def process_frame_to_npz(frame_queue, npz_queue, logger, npz_extraction_complete
     model = model.to(device)
 
     while True:
-        frame_data = frame_queue.get()
+        frame_index, frame_data = input_img_queue.get()
         if frame_data is None:
             logger.info("Exit received in process_frame_to_npz.")  # Changed log message
             break  
-        frame_path, frame_num, num_frames = frame_data
-        logger.info(f"Processing frame {frame_num}")
-
-        image = Image.open(frame_path)
+        # frame_path, frame_num, num_frames = frame_data
+        #logger.info(f"Processing frame {frame_num}")
+        image = Image.fromarray(frame_data)
+        #image = Image.open(frame_path)
 
         new_height = 480 if image.height > 480 else image.height
         new_height -= (new_height % 32)
@@ -149,12 +149,12 @@ def process_frame_to_npz(frame_queue, npz_queue, logger, npz_extraction_complete
         colors = np.asarray(pcd.colors)
         
         # Save to npz
-        npz_path = frame_path.replace('./media/input_frames', './media/npz_files').replace('.png', '.npz')  # Make sure this directory exists or adjust accordingly
-        np.savez(npz_path, points=points, colors=colors)
-        logger.info(f"Successfully saved NPZ file at {npz_path}")
+        #npz_path = frame_path.replace('./media/input_frames', './media/npz_files').replace('.png', '.npz')  # Make sure this directory exists or adjust accordingly
+        #np.savez(npz_path, points=points, colors=colors)
+        #logger.info(f"Successfully saved NPZ file at {npz_path}")
 
         # Camera Position Parameterization (remains unchanged)
-        eye_x, eye_y, eye_z = 0, -0.4, -0.8
-        npz_queue.put((npz_path, eye_x, eye_y, eye_z))  # Queue npz file and camera position for next stage
+        #eye_x, eye_y, eye_z = 0, -0.4, -0.8
+        npz_queue.put((points, colors, frame_index)) # (npz_path, eye_x, eye_y, eye_z))  # Queue npz file and camera position for next stage
     
     npz_extraction_complete.set()  # Maybe consider renaming this flag to something more generic like 'extraction_complete'
