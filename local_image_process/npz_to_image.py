@@ -132,6 +132,7 @@ def process_npz_to_image(
         image_processing_complete):
     
     logger = setup_logger('2dto3dto2d:process_npz_to_image')
+    logger.info("Converting npz to image")
 
     if torch.cuda.is_available():
         device = torch.device("cuda:0")
@@ -143,13 +144,15 @@ def process_npz_to_image(
         if not npz_queue.empty():
 
             points, colors, frame_index, total_frames, write_to_file, npz_path = npz_queue.get()
+            logger.debug(f"Got frame {frame_index} from queue for converstion to PNG from NPZ obj")
+
             # Split by "/" and take the last part. Then strip off ".npz" from the end.
             #number_string = npz_path.split("/")[-1].replace(".npz", "")
             # Convert to integer to get rid of leading zeros.
             #number = int(number_string)
             # Load point cloud
             if write_to_file:
-               pointcloud = np.load(npz_path)
+                pointcloud = np.load(npz_path)
             else:
                 pointcloud = Pointclouds(points=[points], features=[colors])
 

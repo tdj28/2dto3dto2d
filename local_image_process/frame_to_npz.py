@@ -98,7 +98,7 @@ def process_frame_to_npz(
         frame_extraction_complete,
         npz_extraction_complete): 
     logger = setup_logger('2dto3dto2d:process_frame_to_npz')
-
+    logger.info("Initializing model")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     feature_extractor, model = initialize_model(logger)
     model = model.to(device)
@@ -108,7 +108,7 @@ def process_frame_to_npz(
             break
         
         frame_index, total_frames, frame_data, write_to_file, outfile_path = input_img_queue.get()
-       
+        logger.debug(f"Got frame {frame_index} from queue for converstion to NPZ obj")
         if frame_data is None:
             logger.info("Exit received in process_frame_to_npz.")  # Changed log message
             break  

@@ -25,6 +25,7 @@ def create_video(images_path, video_path):
 
 def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete, final_video_creation_complete, output_video_path):
     logger = setup_logger('2dto3dto2d:collect_and_write_images')
+    logger.info("Collecting and writing images to final video.")
     images = []
     while True:
         if not output_image_queue.empty():
