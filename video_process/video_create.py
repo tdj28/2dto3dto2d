@@ -25,38 +25,48 @@ def create_video(images_path, video_path):
 
 def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete, final_video_creation_complete, output_video_path):
     logger = setup_logger('2dto3dto2d:collect_and_write_images')
-    logger.info("Collecting and writing images to final video.")
+    logger.info("Starting to collect and write images to final video.")
     images = []
-    while True:
-        if not output_image_queue.empty():
-            frame_index, image_buf, write_to_file, fin_path = output_image_queue.get()
-            
-            if write_to_file:
-                image = np.array(Image.open(fin_path))
+    try:
+        while True:
+            if not output_image_queue.empty():
+                frame_index, image_buf, write_to_file, fin_path = output_image_queue.get()
+                
+                try:
+                    if write_to_file:
+                        image = np.array(Image.open(fin_path))
+                    else:
+                        image = np.array(Image.open(image_buf))
+                except Exception as e:
+                    logger.error(f"Error opening image at frame {frame_index}: {e}")
+                    continue
+
+                images.append((frame_index, image))
+                logger.info(f"Collected image {frame_index}")
+            elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set() and image_processing_complete.set():
+                break
             else:
-                image = np.array(Image.open(image_buf))
+                time.sleep(1)  # Wait for more images to be queued
 
-            images.append((frame_index, image))
-            logger.info(f"Collected image {frame_index}")
-        elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set() and image_processing_complete.set():
-            break
-        else:
-            time.sleep(1)  # Wait for more images to be queued
+        # Sort images by frame_index
+        images.sort(key=lambda x: x[0])
 
-    # Sort images by frame_index
-    images.sort(key=lambda x: x[0])
+        # Get image dimensions from the first image
+        height, width, _ = images[0][1].shape
 
-    # Get image dimensions from the first image
-    height, width, _ = images[0][1].shape
+        # Initialize video writer
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # or use 'XVID'
+        video = cv2.VideoWriter(output_video_path, fourcc, 30.0, (width, height))
 
-    # Initialize video writer
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # or use 'XVID'
-    video = cv2.VideoWriter(output_video_path, fourcc, 30.0, (width, height))
+        # Write images to video
+        for _, image in images:
+            video.write(image)
 
-    # Write images to video
-    for _, image in images:
-        video.write(image)
-
-    video.release()
-    logger.info(f"Video written to {output_video_path}")
-    final_video_creation_complete.set()
+        video.release()
+        logger.info(f"Video written to {output_video_path}")
+    except Exception as e:
+        logger.error(f"Error during video creation: {e}")
+        raise
+    finally:
+        final_video_creation_complete.set()
+        logger.info("Finished collecting and writing images to video.")
