@@ -32,6 +32,7 @@ def collect_and_write_images(
     logger.info("Starting to collect and write images to final video.")
     images = {}
     last_frame_index_written = -1
+    video = None  # Initialize video to None
 
     try:
         
