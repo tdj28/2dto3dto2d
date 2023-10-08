@@ -120,7 +120,7 @@ def process_frame_to_npz(
                 
                 frame_index, total_frames, fps, frame_data, write_to_file, outfile_path = input_img_queue.get()
                 logger.debug(f"Got frame {frame_index} from queue for converstion to NPZ obj")
-                if frame_data is None:
+                if frame_data is None and write_to_file is False:
                     logger.info("Exit received in process_frame_to_npz.")  # Changed log message
                     break  
                 # frame_path, frame_num, num_frames = frame_data
