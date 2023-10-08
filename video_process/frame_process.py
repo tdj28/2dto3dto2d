@@ -35,6 +35,7 @@ def extract_frames(
     try:
         cap = cv2.VideoCapture(video_path)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
         frame_index = 0
         while True:
             ret, frame = cap.read()
@@ -50,7 +51,7 @@ def extract_frames(
                 frame = None
                 logger.info(f"Wrote frame {frame_index} to file {filename}")
 
-            input_img_queue.put((frame_index, total_frames, frame, write_to_file, outfile_path))
+            input_img_queue.put((frame_index, total_frames, fps, frame, write_to_file, outfile_path))
             logger.info(f"Queued frame {frame_index}")
             frame_index += 1
         cap.release()

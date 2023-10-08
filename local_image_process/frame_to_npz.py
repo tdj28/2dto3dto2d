@@ -118,7 +118,7 @@ def process_frame_to_npz(
                 if frame_extraction_complete.is_set() and input_img_queue.empty():
                     break
                 
-                frame_index, total_frames, frame_data, write_to_file, outfile_path = input_img_queue.get()
+                frame_index, total_frames, fps, frame_data, write_to_file, outfile_path = input_img_queue.get()
                 logger.debug(f"Got frame {frame_index} from queue for converstion to NPZ obj")
                 if frame_data is None:
                     logger.info("Exit received in process_frame_to_npz.")  # Changed log message
@@ -181,7 +181,7 @@ def process_frame_to_npz(
                     colors = None
 
                 try:
-                    npz_queue.put((points, colors, frame_index, total_frames, write_to_file, npz_path))
+                    npz_queue.put((points, colors, frame_index, total_frames, fps, write_to_file, npz_path))
                     logger.info(f"Queued (npz_queue) frame {frame_index}")
                 except Exception as e:
                     logger.error(f"Error queuing (npz_queue) frame {frame_index}: {e}")

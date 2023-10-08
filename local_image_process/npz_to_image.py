@@ -143,7 +143,7 @@ def process_npz_to_image(
     while True:
         if not npz_queue.empty():
 
-            points, colors, frame_index, total_frames, write_to_file, npz_path = npz_queue.get()
+            points, colors, frame_index, total_frames, fps, write_to_file, npz_path = npz_queue.get()
             logger.debug(f"Got frame {frame_index} from queue for converstion to PNG from NPZ obj")
 
             try:
@@ -213,7 +213,7 @@ def process_npz_to_image(
                 plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0, dpi=300)
                 plt.close()
                 buf.seek(0)
-            output_image_queue.put((frame_index, buf, write_to_file, fin_path))
+            output_image_queue.put((frame_index, fps, buf, write_to_file, fin_path))
             logger.debug(f"Published npz->png image to queue for frame {frame_index}")
         elif all(event.is_set() for event in list(npz_extraction_complete)):
             break  # Exit when frame extraction is complete and ply queue is empty

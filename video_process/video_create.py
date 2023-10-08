@@ -40,7 +40,7 @@ def collect_and_write_images(
                 try:
                     logger.info(f"Queue size: {output_image_queue.qsize()}")
 
-                    frame_index, image_buf, write_to_file, fin_path = output_image_queue.get()
+                    frame_index, fps, image_buf, write_to_file, fin_path = output_image_queue.get()
                     logger.info(f"Received from queue - frame_index: {frame_index}, write_to_file: {write_to_file}, fin_path: {fin_path}")
 
                     if write_to_file:
@@ -71,7 +71,7 @@ def collect_and_write_images(
         # Initialize video writer
         try:
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # or use 'XVID'
-            video = cv2.VideoWriter(output_video_path, fourcc, 30.0, (width, height))
+            video = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
         except Exception as e:
             logger.error(f"Error initializing video writer: {e}")
             raise
