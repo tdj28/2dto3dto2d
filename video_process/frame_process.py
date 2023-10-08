@@ -5,6 +5,7 @@ import numpy as np
 import os
 import psutil
 import time
+import gc
 
 def extract_frames_ffmpeg(
         video_path,
@@ -44,6 +45,7 @@ def extract_frames(
                 memory_info = psutil.virtual_memory()
                 if memory_info.percent > 70:
                     logger.info(f"Memory usage: {memory_info.percent}%. Sleeping for 5 seconds.")
+                    gc.collect()
                     time.sleep(5)  # sleep for 5 seconds, hope to let other processes catch up
                 else:
                     break  # if enough memory is available, break
