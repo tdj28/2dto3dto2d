@@ -31,9 +31,10 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
         while True:
             if not output_image_queue.empty():
 
-                frame_index, image_buf, write_to_file, fin_path = output_image_queue.get()
                 
                 try:
+                    frame_index, image_buf, write_to_file, fin_path = output_image_queue.get()
+
                     if write_to_file:
                         image = np.array(Image.open(fin_path))
                     else:
@@ -46,6 +47,7 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
                 logger.info(f"Collected image {frame_index}")
             elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set() and image_processing_complete.is_set():
                 logger.debug("Frame extraction, npz extraction, and image processing are complete.")
+                logger.debug(output_image_queue.empty())
                 break
             else:
                 time.sleep(1)  # Wait for more images to be queued
