@@ -120,12 +120,12 @@ def process_frame_to_npz(
                 if frame_extraction_complete.is_set() and input_img_queue.empty():
                     break
                 
-                while True:
-                    memory_info = psutil.virtual_memory()
-                    if memory_info.percent > 90:
-                        time.sleep(5)  # sleep for 5 seconds, hope to let other processes catch up
-                    else:
-                        break  # if enough memory is available, break
+                # while True:
+                #     memory_info = psutil.virtual_memory()
+                #     if memory_info.percent > 90:
+                #         time.sleep(5)  # sleep for 5 seconds, hope to let other processes catch up
+                #     else:
+                #         break  # if enough memory is available, break
                 frame_index, total_frames, fps, frame_data, write_to_file, outfile_path = input_img_queue.get()
                 logger.debug(f"Got frame {frame_index} from queue for converstion to NPZ obj")
                 if frame_data is None and write_to_file is False:
