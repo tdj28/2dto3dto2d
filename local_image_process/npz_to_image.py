@@ -218,8 +218,7 @@ def process_npz_to_image(
                 buf.seek(0)
             output_image_queue.put((frame_index, buf, write_to_file, fin_path))
             logger.debug(f"Published npz->png image to queue for frame {frame_index}")
-        elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set():
-            print("I'm done with everything")
+        elif frame_extraction_complete.is_set() and all(event.is_set() for event in npz_extraction_complete):
             break  # Exit when frame extraction is complete and ply queue is empty
         else:
             time.sleep(1)  # Wait for more npz files to be queued

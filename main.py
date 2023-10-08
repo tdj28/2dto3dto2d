@@ -35,9 +35,12 @@ def main():
     input_video_path = './media/input_video.mp4'
     output_video_path = './media/output_video.mp4'
 
+    num_cpus = multiprocessing.cpu_count()
+
+
     frame_extraction_complete = multiprocessing.Event()
-    image_processing_complete = multiprocessing.Event()
-    npz_extraction_complete = multiprocessing.Event()
+    npz_extraction_complete = [multiprocessing.Event() for _ in range(num_cpus)]
+    image_processing_complete = [multiprocessing.Event() for _ in range(num_cpus)]
     final_video_creation_complete = multiprocessing.Event()
 
     input_img_queue = multiprocessing.Queue()
@@ -47,15 +50,26 @@ def main():
     # Start processes
     processes = [
         multiprocessing.Process(target=extract_frames, args=(input_video_path, input_img_queue, frame_extraction_complete, write_to_file, output_dir)),
-        multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, frame_extraction_complete, npz_extraction_complete)),
-        multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, frame_extraction_complete, npz_extraction_complete)),
-        multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, frame_extraction_complete, npz_extraction_complete)),
-        multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
-        multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
-        multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
-        multiprocessing.Process(target=collect_and_write_images, args=(output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete, final_video_creation_complete, output_video_path)),
-        # multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
     ]
+
+    for i in range(num_cpus):
+        processes.append(multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, frame_extraction_complete, npz_extraction_complete[i])))
+        processes.append(multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, npz_extraction_complete, image_processing_complete[i])))
+
+    processes.append(multiprocessing.Process(target=collect_and_write_images, args=(output_image_queue, image_processing_complete, final_video_creation_complete, output_video_path)))
+
+    # # Start processes
+    # processes = [
+    #     multiprocessing.Process(target=extract_frames, args=(input_video_path, input_img_queue, frame_extraction_complete, write_to_file, output_dir)),
+    #     multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, frame_extraction_complete, npz_extraction_complete)),
+    #     multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, frame_extraction_complete, npz_extraction_complete)),
+    #     multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, frame_extraction_complete, npz_extraction_complete)),
+    #     multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
+    #     multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
+    #     multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete)),
+    #     multiprocessing.Process(target=collect_and_write_images, args=(output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete, final_video_creation_complete, output_video_path)),
+    #     # multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
+    # ]
     for p in processes:
         p.start()
 

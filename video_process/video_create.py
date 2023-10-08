@@ -23,7 +23,11 @@ def create_video(images_path, video_path):
         print(error_message)
         raise Exception(error_message)  # Raise an exception with the error output
 
-def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_extraction_complete, image_processing_complete, final_video_creation_complete, output_video_path):
+def collect_and_write_images(
+        output_image_queue,
+        image_processing_complete,
+        final_video_creation_complete,
+        output_video_path):
     logger = setup_logger('2dto3dto2d:collect_and_write_images')
     logger.info("Starting to collect and write images to final video.")
     images = []
@@ -51,7 +55,7 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
 
                 images.append((frame_index, image))
                 logger.info(f"Collected image {frame_index}")
-            elif frame_extraction_complete.is_set() and npz_extraction_complete.is_set() and image_processing_complete.is_set():
+            elif all(event.is_set() for event in image_processing_complete):
                 logger.debug("Frame extraction, npz extraction, and image processing are complete.")
                 logger.debug(output_image_queue.empty())
                 break
@@ -75,8 +79,10 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
         for i, (frame_index, image_data) in enumerate(images):
             try:
                 logger.info(f"Writing frame {frame_index} to video...")
-                #image_data= cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)
-                video.write(image_data)
+                image_data= cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)
+                #image_data= cv2.cvtColor(image_data, cv2.COLOR_RGBA2BGRA)
+                image_bgr = image_data[:, :, ::-1]
+                video.write(image_bgr)
                 logger.info(f"Successfully wrote frame {frame_index} to video.")
             except Exception as e:
                 logger.error(f"Error writing frame {frame_index} to video: {e}")

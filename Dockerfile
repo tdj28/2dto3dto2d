@@ -5,6 +5,11 @@ WORKDIR /app
 ADD ./requirements.txt /app
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+RUN transformers-cli download --model vinvino02/glpn-nyu
+
+# feature_extractor = GLPNImageProcessor.from_pretrained("/app/glpn-nyu")
+# model = GLPNForDepthEstimation.from_pretrained("/app/glpn-nyu")
+
 
 # Add the current directory contents into the container at /app
 ADD . /app

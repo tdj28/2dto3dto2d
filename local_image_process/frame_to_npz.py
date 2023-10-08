@@ -4,12 +4,18 @@ import torch
 import numpy as np
 from PIL import Image
 from helpers import setup_logger
+import os
 
 def initialize_model(logger):
     try:
         print("initializing")
-        feature_extractor = GLPNImageProcessor.from_pretrained("vinvino02/glpn-nyu")
-        model = GLPNForDepthEstimation.from_pretrained("vinvino02/glpn-nyu")
+        # Determine model loading path
+        if os.environ.get("INSIDE_DOCKER") == "1":
+            model_path = "/app/glpn-nyu"  # or wherever you store it in the Docker image
+        else:
+            model_path = "vinvino02/glpn-nyu"
+        feature_extractor = GLPNImageProcessor.from_pretrained(model_path)
+        model = GLPNForDepthEstimation.from_pretrained(model_path)
         print("Model done")
         return feature_extractor, model
     except Exception as e:
@@ -96,7 +102,8 @@ def process_frame_to_npz(
         input_img_queue,
         npz_queue,
         frame_extraction_complete,
-        npz_extraction_complete): 
+        npz_extraction_complete):
+     
     logger = setup_logger('2dto3dto2d:process_frame_to_npz')
     logger.info("Initializing model")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
