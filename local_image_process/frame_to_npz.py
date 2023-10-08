@@ -36,7 +36,7 @@ def process_frame_to_ply(frame_queue, ply_queue, logger, ply_extraction_complete
 
 
     while True:
-        #print("True")
+
         frame_data = frame_queue.get()
         if frame_data is None:
             print("None")
@@ -122,12 +122,12 @@ def process_frame_to_npz(
                 if frame_extraction_complete.is_set() and input_img_queue.empty():
                     break
                 
-                # while True:
-                #     memory_info = psutil.virtual_memory()
-                #     if memory_info.percent > 90:
-                #         time.sleep(5)  # sleep for 5 seconds, hope to let other processes catch up
-                #     else:
-                #         break  # if enough memory is available, break
+                memory_info = psutil.virtual_memory()
+                # Sleep for a bit but don't trap it in a loop if memory gets high
+                if memory_info.percent > 70:
+                    logger.info(f"Memory usage: {memory_info.percent}%. Sleeping for 5 seconds.")
+                    gc.collect()
+                    time.sleep(5)  # sleep for 5 seconds, hope to let other processes catch up
                 frame_index, total_frames, fps, frame_data, write_to_file, outfile_path = input_img_queue.get()
                 logger.debug(f"Got frame {frame_index} from queue for converstion to NPZ obj")
                 if frame_data is None and write_to_file is False:
@@ -167,7 +167,6 @@ def process_frame_to_npz(
                 image = image.crop((pad, pad, image.width - pad, image.height - pad))
 
                 width, height = image.size
-                #print(f"{width} {height}")
                 depth_image = (output * 255 / np.max(output)).astype('uint8')
                 image = np.array(image)
                 depth_o3d = o3d.geometry.Image(depth_image)
@@ -197,6 +196,7 @@ def process_frame_to_npz(
 
                 try:
                     npz_queue.put((points, colors, frame_index, total_frames, fps, write_to_file, npz_path))
+                    gc.collect()
                     logger.info(f"Queued (npz_queue) frame {frame_index}")
                 except Exception as e:
                     logger.error(f"Error queuing (npz_queue) frame {frame_index}: {e}")
