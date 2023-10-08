@@ -124,15 +124,6 @@ def process_ply_to_image(ply_queue, frame_extraction_complete, ply_extraction_co
             print("sleep")
     image_processing_complete.set()  # Indicate that image processing is complete
 
-            processes.append(
-                multiprocessing.Process(
-                    target=process_npz_to_image,
-                    args=(
-                        npz_queue,
-                        output_image_queue,
-                        npz_extraction_complete,
-                        image_processing_complete[i]
-                        )))
 
 def process_npz_to_image(
         npz_queue,
