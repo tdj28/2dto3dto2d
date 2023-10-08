@@ -55,7 +55,7 @@ def collect_and_write_images(
 
                 images.append((frame_index, image))
                 logger.info(f"Collected image {frame_index}")
-            elif all(event.is_set() for event in image_processing_complete):
+            elif all(event.is_set() for event in list(image_processing_complete)):
                 logger.debug("Frame extraction, npz extraction, and image processing are complete.")
                 logger.debug(output_image_queue.empty())
                 break

@@ -43,10 +43,11 @@ def main():
         num_cpus = multiprocessing.cpu_count()
         logger.info(f"Number of CPUs: {num_cpus}")
 
+        with multiprocessing.Manager() as manager:
+            npz_extraction_complete = manager.list([multiprocessing.Event() for _ in range(max(1, num_cpus//2))])
+            image_processing_complete = manager.list([multiprocessing.Event() for _ in range(max(1, num_cpus//2))])
 
         frame_extraction_complete = multiprocessing.Event()
-        npz_extraction_complete = [multiprocessing.Event() for _ in range(max(1, num_cpus//2))]
-        image_processing_complete = [multiprocessing.Event() for _ in range(max(1, num_cpus//2))]
         final_video_creation_complete = multiprocessing.Event()
 
         input_img_queue = multiprocessing.Queue()
@@ -66,6 +67,7 @@ def main():
 
         #for i in range(num_cpus):
         for i in range(max(1, num_cpus//2)):
+
             processes.append(
                 multiprocessing.Process(
                     target=process_frame_to_npz,
@@ -98,7 +100,11 @@ def main():
                     )))
 
         for p in processes:
-            p.start()
+            try:
+                p.start()
+            except Exception as e:
+                logger.error(f"Error starting process: {e}")
+                return
 
         final_video_creation_complete.wait()
 
