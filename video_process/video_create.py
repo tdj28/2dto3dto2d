@@ -75,7 +75,7 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
         for i, (frame_index, image_data) in enumerate(images):
             try:
                 logger.info(f"Writing frame {frame_index} to video...")
-                image_data= cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)
+                #image_data= cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)
                 video.write(image_data)
                 logger.info(f"Successfully wrote frame {frame_index} to video.")
             except Exception as e:

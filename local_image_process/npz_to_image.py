@@ -179,7 +179,7 @@ def process_npz_to_image(
             normalized_verts = (verts - centroid) / scale
 
             # Initialize a camera close to the centroid
-            azim = (frame_index / total_frames) * 360
+            azim = -45 + (frame_index / total_frames) * 90
             R, T = look_at_view_transform(dist=-1, elev=0, azim=azim)
             R[0, 1] = -R[0, 1]  # Flip the y-axis
 
