@@ -30,12 +30,13 @@ def collect_and_write_images(
         output_video_path):
     logger = setup_logger('2dto3dto2d:collect_and_write_images')
     logger.info("Starting to collect and write images to final video.")
-    images = []
+    images = {}
+    last_frame_index_written = -1
+
     try:
         
         while True:
             if not output_image_queue.empty():
-                
                 
                 try:
                     logger.info(f"Queue size: {output_image_queue.qsize()}")
@@ -55,6 +56,34 @@ def collect_and_write_images(
 
                 images.append((frame_index, image))
                 logger.info(f"Collected image {frame_index}")
+
+                # Initialize video writer if not already done
+                if video is None:
+                    try:
+                        height, width, _ = image.shape
+                        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # or use 'XVID'
+                        video = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
+                    except Exception as e:
+                        logger.error(f"Error initializing video writer: {e}")
+                        raise
+
+                 # Write images to video in sequence
+                while last_frame_index_written + 1 in images:
+                    frame_index = last_frame_index_written + 1
+                    image_data = images.pop(frame_index)
+                    try:
+                        logger.info(f"Writing frame {frame_index} to video...")
+                        # Needs to be in this format for cv2 to write it
+                        image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)
+                        # Flip the colors to get the right colors back
+                        image_bgr = image_data[:, :, ::-1]
+                        video.write(image_bgr)
+                        logger.info(f"Successfully wrote frame {frame_index} to video.")
+                        last_frame_index_written = frame_index
+                    except Exception as e:
+                        logger.error(f"Error writing frame {frame_index} to video: {e}")
+                        continue
+
             elif all(event.is_set() for event in list(image_processing_complete)):
                 logger.debug("Frame extraction, npz extraction, and image processing are complete.")
                 logger.debug(output_image_queue.empty())
@@ -62,37 +91,13 @@ def collect_and_write_images(
             else:
                 time.sleep(1)  # Wait for more images to be queued
 
-        # Sort images by frame_index
-        images.sort(key=lambda x: x[0])
-
-        # Get image dimensions from the first image
-        height, width, _ = images[0][1].shape
-
-        # Initialize video writer
-        try:
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # or use 'XVID'
-            video = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
-        except Exception as e:
-            logger.error(f"Error initializing video writer: {e}")
-            raise
-        # Write images to video
-        for i, (frame_index, image_data) in enumerate(images):
-            try:
-                logger.info(f"Writing frame {frame_index} to video...")
-                image_data= cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)
-                #image_data= cv2.cvtColor(image_data, cv2.COLOR_RGBA2BGRA)
-                image_bgr = image_data[:, :, ::-1]
-                video.write(image_bgr)
-                logger.info(f"Successfully wrote frame {frame_index} to video.")
-            except Exception as e:
-                logger.error(f"Error writing frame {frame_index} to video: {e}")
-                continue
-
         video.release()
         logger.info(f"Video written to {output_video_path}")
     except Exception as e:
         logger.error(f"Error during video creation: {e}")
         raise
     finally:
+        final_video_creation_complete.set()
+        logger.info("Finished collecting and writing images to video.")
         final_video_creation_complete.set()
         logger.info("Finished collecting and writing images to video.")
