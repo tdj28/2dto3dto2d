@@ -54,7 +54,7 @@ def collect_and_write_images(
                     logger.error(f"Error opening image at frame {frame_index}: {e}")
                     continue
 
-                images.append((frame_index, image))
+                images[frame_index] = image
                 logger.info(f"Collected image {frame_index}")
 
                 # Initialize video writer if not already done
