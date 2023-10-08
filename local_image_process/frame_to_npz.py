@@ -174,11 +174,16 @@ def process_frame_to_npz(
                 # Save to npz
                 npz_path = None
                 if write_to_file:
-                    npz_path = outfile_path.replace('png', 'npz')
-                    np.savez(npz_path, points=points, colors=colors)
-                    logger.info(f"Successfully saved NPZ file at {npz_path}")
-                    points = None
-                    colors = None
+                    try:
+                        npz_path = outfile_path.replace('png', 'npz')
+                        logger.info(f"Writing NPZ file to {npz_path}")
+                        np.savez(npz_path, points=points, colors=colors)
+                        logger.info(f"Successfully saved NPZ file at {npz_path}")
+                        points = None
+                        colors = None
+                    except Exception as e:
+                        logger.error(f"Error saving NPZ file at {npz_path}: {e}")
+                        continue
 
                 try:
                     npz_queue.put((points, colors, frame_index, total_frames, fps, write_to_file, npz_path))
