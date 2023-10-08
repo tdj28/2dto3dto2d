@@ -3,8 +3,8 @@ import os
 import time
 import multiprocessing
 from helpers import setup_logger
-from image_process import extract_frames, process_frame_to_ply, process_ply_to_image
-from video_process import create_video
+from local_image_process import process_frame_to_npz, process_npz_to_image
+from video_process import create_video, extract_frames, collect_and_write_images
 import sys
 import torch
 
@@ -14,80 +14,118 @@ def ensure_directory_exists(directory_path):
         os.makedirs(directory_path)
 
 def main():
-    multiprocessing.set_start_method('spawn', force=True)
+    
+    try:
+        manager = multiprocessing.Manager()
 
-    input_video_path = './input_video.mp4'
-    input_frames_path = './media/input_frames'
-    output_frames_path = './media/output_frames'
-    output_video_path = './output_video.mp4'
-    frame_filename_glob_string = '%08d'
+        multiprocessing.set_start_method('spawn', force=True)
 
-    logger = setup_logger('2dto3dto2d')
-
+        logger = setup_logger('2dto3dto2d')
+        logger.info("Starting main function")
 
 
-    media_folder = './media'
-    input_frames_folder = os.path.join(media_folder, 'input_frames')
-    output_frames_folder = os.path.join(media_folder, 'output_frames')
-    ply_files_folder = os.path.join(media_folder, 'ply_files')
+        write_to_file = False
+        output_dir = None
 
-    ensure_directory_exists(media_folder)
-    ensure_directory_exists(input_frames_folder)
-    ensure_directory_exists(output_frames_folder)
-    ensure_directory_exists(ply_files_folder)
-
-    frame_extraction_complete = multiprocessing.Event()
-    image_processing_complete = multiprocessing.Event()
-    ply_extraction_complete = multiprocessing.Event()
-    frame_queue = multiprocessing.Queue()
-    ply_queue = multiprocessing.Queue()
-
-    # Start processes
-    processes = [
-        multiprocessing.Process(target=extract_frames, args=(input_video_path, input_frames_path, frame_extraction_complete)),
-        multiprocessing.Process(target=process_frame_to_ply, args=(frame_queue, ply_queue, logger, ply_extraction_complete)),
-        multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
-        multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
-        multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
-        multiprocessing.Process(target=process_ply_to_image, args=(ply_queue, frame_extraction_complete, ply_extraction_complete, image_processing_complete, logger)),
-        ]
-    for p in processes:
-        p.start()
-
-    # Monitor frame directory and queue new frames
-    known_frames = set()
-    frame_num = 0  # Initialize frame number
-
-    while not frame_extraction_complete.is_set():
-        current_frames = set(glob.glob(f"{input_frames_path}/*.png"))
-
-        #print(current_frames)
-        new_frames = current_frames - known_frames
-        num_frames = len(current_frames)  # Update total number of frames
-        for frame_path in new_frames:
-            frame_num += 1  # Increment frame number
-            frame_queue.put((frame_path, frame_num, num_frames))  # Updated line
-            #print(frame_queue.qsize())
-        #print(f"Queued {len(new_frames)} new frames")
-        known_frames.update(new_frames)
-        if frame_extraction_complete.is_set() and not new_frames:
-            frame_queue.put(None)  # Signal ply processing to exit once all frames have been queued
-        time.sleep(1)  # Wait before checking for new frames again
+        ensure_directory_exists('./media')
+        logger.debug("Ensured media directory exists")
 
 
+        input_video_path = './media/input_video.mp4'
+        output_video_path = './media/output_video.mp4'
 
-    # Signal ply processing to exit
-    frame_queue.put(None)
+        # Validate inputs
+        if not os.path.isfile(input_video_path):
+            logger.error(f"Input video file does not exist: {input_video_path}")
+            return
+        else:
+            logger.info(f"Input video file exists: {input_video_path}")
 
-    # Wait for all processes to finish
-    for p in processes:
-        p.join()
 
-    image_processing_complete.wait()
-    # Create video from output images
-    create_video(output_frames_path, output_video_path)
+        num_cpus = multiprocessing.cpu_count()
+        logger.info(f"Number of CPUs: {num_cpus}")
+
+        npz_extraction_complete = manager.list([manager.Event() for _ in range(max(1, num_cpus//2))])
+        image_processing_complete = manager.list([manager.Event() for _ in range(max(1, num_cpus//2))])
+
+        frame_extraction_complete = multiprocessing.Event()
+        final_video_creation_complete = multiprocessing.Event()
+
+        input_img_queue = multiprocessing.Queue()
+        npz_queue = multiprocessing.Queue()
+        output_image_queue = multiprocessing.Queue()
+
+        # Start processes
+        processes = []
+
+        #for i in range(num_cpus):
+        for i in range(max(1, num_cpus//2)):
+            # These load models so put them first
+            processes.append(
+                multiprocessing.Process(
+                    target=process_frame_to_npz,
+                    args=(
+                        input_img_queue,
+                        npz_queue,
+                        frame_extraction_complete,
+                        npz_extraction_complete[i]
+                        )))
+            
+        for i in range(max(1, num_cpus//2)):
+
+            processes.append(
+                multiprocessing.Process(
+                    target=process_npz_to_image,
+                    args=(
+                        npz_queue,
+                        output_image_queue,
+                        npz_extraction_complete,
+                        image_processing_complete[i]
+                        )))
+
+        processes.append(
+            multiprocessing.Process(
+                target=collect_and_write_images,
+                args=(
+                    output_image_queue,
+                    image_processing_complete,
+                    final_video_creation_complete,
+                    output_video_path
+                    )))
+        
+        processes.append(
+            multiprocessing.Process(
+                target=extract_frames, args=(
+                    input_video_path,
+                    input_img_queue,
+                    frame_extraction_complete,
+                    write_to_file,
+                    output_dir)))
+
+        for p in processes:
+            try:
+                p.start()
+            except Exception as e:
+                logger.error(f"Error starting process: {e}")
+                return
+
+        final_video_creation_complete.wait()
+
+        # Wait for all processes to finish
+        for p in processes:
+            p.join()
+
+        manager.shutdown()
+
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        return
+
 
 if __name__ == '__main__':
     if not torch.cuda.is_available():
         sys.exit("Error: CUDA is not available.")
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"An error occurred: {e}")
