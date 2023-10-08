@@ -126,25 +126,27 @@ def process_frame_to_npz(
                 image = Image.open(outfile_path)
             else:
                 image = Image.fromarray(frame_data)
+            logger.debug(f"Loaded image: {frame_index} from queue for converstion to NPZ obj")
 
             new_height = 480 if image.height > 480 else image.height
             new_height -= (new_height % 32)
             new_width = int(new_height * image.width / image.height)
             diff = new_width % 32
-            #print("b")
 
             new_width = new_width - diff if diff < 16 else new_width + 32 - diff
             new_size = (new_width, new_height)
             image = image.resize(new_size)
-            #print("bb")
-            #print(type(image), image.size)
+
             inputs = feature_extractor(images=image, return_tensors="pt")
             inputs = inputs.to(device)
-            #print("c")
 
             with torch.no_grad():
-                outputs = model(**inputs)
-                predicted_depth = outputs.predicted_depth
+                try:
+                    outputs = model(**inputs)
+                    predicted_depth = outputs.predicted_depth
+                except Exception as e:
+                    logger.error(f"Error in model inference: {e}")
+                    continue
 
             pad = 16
             output = predicted_depth.squeeze().cpu().numpy() * 1000.0
@@ -175,7 +177,12 @@ def process_frame_to_npz(
                 points = None
                 colors = None
 
-            npz_queue.put((points, colors, frame_index, total_frames, write_to_file, npz_path)) # (npz_path, eye_x, eye_y, eye_z))  # Queue npz file and camera position for next stage
+            try:
+                npz_queue.put((points, colors, frame_index, total_frames, write_to_file, npz_path))
+                logger.info(f"Queued (npz_queue) frame {frame_index}")
+            except Exception as e:
+                logger.error(f"Error queuing (npz_queue) frame {frame_index}: {e}")
+                continue
     
         except Exception as e:
             logger.error(f"Error processing frame {frame_index}: {e}")
