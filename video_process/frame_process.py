@@ -42,7 +42,7 @@ def extract_frames(
         while True:
             while True:
                 memory_info = psutil.virtual_memory()
-                if memory_info.percent > 90:
+                if memory_info.percent > 80:
                     logger.info(f"Memory usage: {memory_info.percent}%. Sleeping for 5 seconds.")
                     time.sleep(5)  # sleep for 5 seconds, hope to let other processes catch up
                 else:
