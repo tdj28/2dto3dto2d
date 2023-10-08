@@ -16,6 +16,8 @@ def ensure_directory_exists(directory_path):
 def main():
     
     try:
+        manager = multiprocessing.Manager()
+
         multiprocessing.set_start_method('spawn', force=True)
 
         logger = setup_logger('2dto3dto2d')
@@ -43,9 +45,8 @@ def main():
         num_cpus = multiprocessing.cpu_count()
         logger.info(f"Number of CPUs: {num_cpus}")
 
-        with multiprocessing.Manager() as manager:
-            npz_extraction_complete = manager.list([multiprocessing.Event() for _ in range(max(1, num_cpus//2))])
-            image_processing_complete = manager.list([multiprocessing.Event() for _ in range(max(1, num_cpus//2))])
+        npz_extraction_complete = manager.list([manager.Event() for _ in range(max(1, num_cpus//2))])
+        image_processing_complete = manager.list([manager.Event() for _ in range(max(1, num_cpus//2))])
 
         frame_extraction_complete = multiprocessing.Event()
         final_video_creation_complete = multiprocessing.Event()
@@ -111,6 +112,8 @@ def main():
         # Wait for all processes to finish
         for p in processes:
             p.join()
+
+        manager.shutdown()
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
