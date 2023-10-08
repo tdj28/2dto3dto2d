@@ -34,8 +34,17 @@ def extract_frames(
         frame_extraction_complete,
         write_to_file=False,
         output_dir=None):
+    
+    start_flag = True
     logger = setup_logger('2dto3dto2d:extract_frames')
     try:
+        
+        if start_flag:
+            # Give the models time to load before starting to extract frames
+            # in order to avoid RAM issues
+            time.sleep(20)
+            start_flag = False
+
         cap = cv2.VideoCapture(video_path)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = cap.get(cv2.CAP_PROP_FPS)
@@ -43,7 +52,7 @@ def extract_frames(
         while True:
             while True:
                 memory_info = psutil.virtual_memory()
-                if memory_info.percent > 70:
+                if memory_info.percent > 50:
                     logger.info(f"Memory usage: {memory_info.percent}%. Sleeping for 5 seconds.")
                     gc.collect()
                     time.sleep(5)  # sleep for 5 seconds, hope to let other processes catch up

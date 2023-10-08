@@ -56,19 +56,11 @@ def main():
         output_image_queue = multiprocessing.Queue()
 
         # Start processes
-        processes = [
-            multiprocessing.Process(
-                target=extract_frames, args=(
-                    input_video_path,
-                    input_img_queue,
-                    frame_extraction_complete,
-                    write_to_file,
-                    output_dir)),
-        ]
+        processes = []
 
         #for i in range(num_cpus):
         for i in range(max(1, num_cpus//2)):
-
+            # These load models so put them first
             processes.append(
                 multiprocessing.Process(
                     target=process_frame_to_npz,
@@ -79,6 +71,7 @@ def main():
                         npz_extraction_complete[i]
                         )))
             
+        for i in range(max(1, num_cpus//2)):
 
             processes.append(
                 multiprocessing.Process(
@@ -99,6 +92,15 @@ def main():
                     final_video_creation_complete,
                     output_video_path
                     )))
+        
+        processes.append(
+            multiprocessing.Process(
+                target=extract_frames, args=(
+                    input_video_path,
+                    input_img_queue,
+                    frame_extraction_complete,
+                    write_to_file,
+                    output_dir)))
 
         for p in processes:
             try:
