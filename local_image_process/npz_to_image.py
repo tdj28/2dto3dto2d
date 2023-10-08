@@ -127,7 +127,6 @@ def process_ply_to_image(ply_queue, frame_extraction_complete, ply_extraction_co
 def process_npz_to_image(
         npz_queue,
         output_image_queue,
-        frame_extraction_complete,
         npz_extraction_complete,
         image_processing_complete):
     

@@ -45,8 +45,8 @@ def main():
 
 
         frame_extraction_complete = multiprocessing.Event()
-        npz_extraction_complete = [multiprocessing.Event() for _ in range(num_cpus)]
-        image_processing_complete = [multiprocessing.Event() for _ in range(num_cpus)]
+        npz_extraction_complete = [multiprocessing.Event() for _ in range(max(1, num_cpus//2))]
+        image_processing_complete = [multiprocessing.Event() for _ in range(max(1, num_cpus//2))]
         final_video_creation_complete = multiprocessing.Event()
 
         input_img_queue = multiprocessing.Queue()
@@ -60,8 +60,26 @@ def main():
 
         #for i in range(num_cpus):
         for i in range(max(1, num_cpus//2)):
-            processes.append(multiprocessing.Process(target=process_frame_to_npz, args=(input_img_queue, npz_queue, frame_extraction_complete, npz_extraction_complete[i])))
-            processes.append(multiprocessing.Process(target=process_npz_to_image, args=(npz_queue, output_image_queue, npz_extraction_complete, image_processing_complete[i])))
+            processes.append(
+                multiprocessing.Process(
+                    target=process_frame_to_npz,
+                    args=(
+                        input_img_queue,
+                        npz_queue,
+                        frame_extraction_complete,
+                        npz_extraction_complete[i]
+                        )))
+            
+
+            processes.append(
+                multiprocessing.Process(
+                    target=process_npz_to_image,
+                    args=(
+                        npz_queue,
+                        output_image_queue,
+                        npz_extraction_complete,
+                        image_processing_complete[i]
+                        )))
 
         processes.append(multiprocessing.Process(target=collect_and_write_images, args=(output_image_queue, image_processing_complete, final_video_creation_complete, output_video_path)))
 
