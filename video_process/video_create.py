@@ -98,6 +98,3 @@ def collect_and_write_images(
         raise
     finally:
         final_video_creation_complete.set()
-        logger.info("Finished collecting and writing images to video.")
-        final_video_creation_complete.set()
-        logger.info("Finished collecting and writing images to video.")
