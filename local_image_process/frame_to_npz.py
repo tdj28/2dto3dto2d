@@ -7,6 +7,7 @@ from helpers import setup_logger
 import os
 import psutil
 import time
+import gc
 
 def initialize_model(logger):
     try:
@@ -97,6 +98,7 @@ def process_frame_to_ply(frame_queue, ply_queue, logger, ply_extraction_complete
         eye_y = -0.4 #np.interp(frame_num, [1, num_frames], [-0.37, -0.44])
         eye_z = -0.8 #np.interp(frame_num, [1, num_frames], [-0.9, 0.6])
         ply_queue.put((ply_path, eye_x, eye_y, eye_z))  # Queue ply file and camera position for next stage
+        gc.collect()
     ply_extraction_complete.set()
 
 

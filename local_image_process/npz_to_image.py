@@ -34,7 +34,7 @@ import torch
 from pytorch3d.structures import Pointclouds
 from pytorch3d.renderer import look_at_view_transform, FoVPerspectiveCameras, PointsRasterizationSettings, PointsRasterizer, PointsRenderer, AlphaCompositor
 import matplotlib.pyplot as plt
-
+import gc
 
 MAX_RETRIES = 3
 
@@ -245,6 +245,7 @@ def process_npz_to_image(
                 buf,
                 write_to_file,
                 fin_path))
+            gc.collect()
             logger.debug(f"Published npz->png image to queue for frame {frame_index}")
         elif all(event.is_set() for event in list(npz_extraction_complete)):
             break  # Exit when frame extraction is complete and ply queue is empty

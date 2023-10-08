@@ -4,6 +4,7 @@ import numpy as np
 import time
 from PIL import Image
 from helpers import setup_logger
+import gc
 
 def create_video(images_path, video_path):
     command = [
@@ -84,7 +85,9 @@ def collect_and_write_images(
                     except Exception as e:
                         logger.error(f"Error writing frame {frame_index} to video: {e}")
                         continue
-
+                
+                gc.collect()
+                
             elif all(event.is_set() for event in list(image_processing_complete)):
                 logger.debug("Frame extraction, npz extraction, and image processing are complete.")
                 logger.debug(output_image_queue.empty())
