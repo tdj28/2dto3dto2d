@@ -176,34 +176,60 @@ def process_npz_to_image(
             normalized_verts = (verts - centroid) / scale
 
             # Initialize a camera close to the centroid
-            azim = -30 + (frame_index / total_frames) * 60
-            R, T = look_at_view_transform(dist=-1, elev=20, azim=azim)
+            azim = -30 + (frame_index / total_frames) * 30
+            elev = 0 - 20*(frame_index / total_frames)
+            dist = -1 + 0.3*(frame_index / total_frames)
+            
+            R, T = look_at_view_transform(
+                dist=dist,
+                elev=elev,
+                azim=azim)
             R[0, 1] = -R[0, 1]  # Flip the y-axis
 
-            cameras = FoVPerspectiveCameras(device=device, R=R, T=T)
+            cameras = FoVPerspectiveCameras(
+                device=device,
+                R=R,
+                T=T)
 
             # Define rasterization settings
             raster_settings = PointsRasterizationSettings(
                 image_size=512, 
-                radius = 0.005,  # Adjusted for normalized point cloud
+                radius = 0.006,  # Adjusted for normalized point cloud
                 points_per_pixel = 10
             )
 
             # Create a points renderer
-            rasterizer = PointsRasterizer(cameras=cameras, raster_settings=raster_settings)
+            rasterizer = PointsRasterizer(
+                cameras=cameras,
+                raster_settings=raster_settings)
             renderer = PointsRenderer(
                 rasterizer=rasterizer,
                 compositor=AlphaCompositor()
             )
 
             # Render normalized point cloud
-            point_cloud = Pointclouds(points=[normalized_verts], features=[rgb])
+            point_cloud = Pointclouds(
+                points=[normalized_verts],
+                features=[rgb])
             images = renderer(point_cloud)
             plt.figure(figsize=(10, 10))
             plt.imshow(images[0, ..., :3].cpu().numpy())
             plt.axis("off")
+
+            for var in [
+                pointcloud,
+                verts,
+                rgb,
+                normalized_verts,
+                cameras,
+                rasterizer,
+                renderer,
+                point_cloud,
+                images]:
+                del var
+
             fin_path = None
-            bug = None
+            buf = None
             logger.debug("Publishing npz->png image to queue")
             if write_to_file:
                 fin_path = npz_path.replace('frame_', 'final_').replace('.npz', '.png')
@@ -213,7 +239,12 @@ def process_npz_to_image(
                 plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0, dpi=300)
                 plt.close()
                 buf.seek(0)
-            output_image_queue.put((frame_index, fps, buf, write_to_file, fin_path))
+            output_image_queue.put((
+                frame_index,
+                fps,
+                buf,
+                write_to_file,
+                fin_path))
             logger.debug(f"Published npz->png image to queue for frame {frame_index}")
         elif all(event.is_set() for event in list(npz_extraction_complete)):
             break  # Exit when frame extraction is complete and ply queue is empty
