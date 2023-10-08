@@ -146,11 +146,6 @@ def process_npz_to_image(
             points, colors, frame_index, total_frames, write_to_file, npz_path = npz_queue.get()
             logger.debug(f"Got frame {frame_index} from queue for converstion to PNG from NPZ obj")
 
-            # Split by "/" and take the last part. Then strip off ".npz" from the end.
-            #number_string = npz_path.split("/")[-1].replace(".npz", "")
-            # Convert to integer to get rid of leading zeros.
-            #number = int(number_string)
-            # Load point cloud
             try:
                 if write_to_file:
                     pointcloud = np.load(npz_path)
@@ -169,6 +164,8 @@ def process_npz_to_image(
             verts = torch.Tensor(pointcloud['points']).to(device)
             rgb = torch.Tensor(pointcloud['colors']).to(device)
 
+            verts[..., 0] = -verts[..., 0]  # Negate the x-coordinates in-place
+
             # Compute centroid and bounding box
             centroid = verts.mean(dim=0)
             min_vals, _ = verts.min(dim=0)
@@ -179,8 +176,8 @@ def process_npz_to_image(
             normalized_verts = (verts - centroid) / scale
 
             # Initialize a camera close to the centroid
-            azim = -45 + (frame_index / total_frames) * 90
-            R, T = look_at_view_transform(dist=-1, elev=0, azim=azim)
+            azim = -30 + (frame_index / total_frames) * 60
+            R, T = look_at_view_transform(dist=-1, elev=20, azim=azim)
             R[0, 1] = -R[0, 1]  # Flip the y-axis
 
             cameras = FoVPerspectiveCameras(device=device, R=R, T=T)
