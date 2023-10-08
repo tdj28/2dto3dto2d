@@ -28,17 +28,23 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
     logger.info("Starting to collect and write images to final video.")
     images = []
     try:
+        
         while True:
             if not output_image_queue.empty():
-
+                
                 
                 try:
+                    logger.info(f"Queue size: {output_image_queue.qsize()}")
+
                     frame_index, image_buf, write_to_file, fin_path = output_image_queue.get()
+                    logger.info(f"Received from queue - frame_index: {frame_index}, write_to_file: {write_to_file}, fin_path: {fin_path}")
 
                     if write_to_file:
                         image = np.array(Image.open(fin_path))
+
                     else:
-                        image = np.array(Image.open(image_buf))
+                        image = np.array(Image.open(image_buf), dtype=np.uint8)
+
                 except Exception as e:
                     logger.error(f"Error opening image at frame {frame_index}: {e}")
                     continue
@@ -68,6 +74,8 @@ def collect_and_write_images(output_image_queue, frame_extraction_complete, npz_
         # Write images to video
         for i, (frame_index, image_data) in enumerate(images):
             try:
+                logger.info(f"Writing frame {frame_index} to video...")
+                image_data= cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)
                 video.write(image_data)
                 logger.info(f"Successfully wrote frame {frame_index} to video.")
             except Exception as e:
