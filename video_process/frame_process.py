@@ -4,7 +4,10 @@ import cv2
 import numpy as np
 import os
 
-def extract_frames_ffmpeg(video_path, frames_path, frame_extraction_complete):
+def extract_frames_ffmpeg(
+        video_path,
+        frames_path,
+        frame_extraction_complete):
     logger = setup_logger('2dto3dto2d')
     frame_filename_glob_string = '%08d'
     command = [
@@ -21,7 +24,13 @@ def extract_frames_ffmpeg(video_path, frames_path, frame_extraction_complete):
         raise Exception(error_message)  # Raise an exception with the error output
     frame_extraction_complete.set()
 
-def extract_frames(video_path, input_img_queue, frame_extraction_complete, write_to_file=False, output_dir=None):
+
+def extract_frames(
+        video_path,
+        input_img_queue,
+        frame_extraction_complete,
+        write_to_file=False,
+        output_dir=None):
     logger = setup_logger('2dto3dto2d:extract_frames')
     try:
         cap = cv2.VideoCapture(video_path)

@@ -55,7 +55,13 @@ def main():
 
         # Start processes
         processes = [
-            multiprocessing.Process(target=extract_frames, args=(input_video_path, input_img_queue, frame_extraction_complete, write_to_file, output_dir)),
+            multiprocessing.Process(
+                target=extract_frames, args=(
+                    input_video_path,
+                    input_img_queue,
+                    frame_extraction_complete,
+                    write_to_file,
+                    output_dir)),
         ]
 
         #for i in range(num_cpus):
@@ -81,7 +87,15 @@ def main():
                         image_processing_complete[i]
                         )))
 
-        processes.append(multiprocessing.Process(target=collect_and_write_images, args=(output_image_queue, image_processing_complete, final_video_creation_complete, output_video_path)))
+        processes.append(
+            multiprocessing.Process(
+                target=collect_and_write_images,
+                args=(
+                    output_image_queue,
+                    image_processing_complete,
+                    final_video_creation_complete,
+                    output_video_path
+                    )))
 
         for p in processes:
             p.start()
